@@ -6,6 +6,8 @@ import 'tasks_screen.dart';
 import 'exams_screen.dart';
 import 'chat_screen.dart';
 import 'calm_screen.dart';
+import 'package:provider/provider.dart';
+import '../core/providers/navigation_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,8 +17,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-
   static const List<Widget> _pages = [
     DashboardView(),
     TasksScreen(),
@@ -27,12 +27,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nav = context.watch<NavigationProvider>();
+
     return Scaffold(
-      extendBody: true, // Crucial for glass effect over content
-      backgroundColor: AppColors.background,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
+      extendBody: true,
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          // Decorative Background Blobs
+          Positioned(
+            top: -100,
+            right: -50,
+            child: _blob(250, AppColors.primary.withOpacity(0.08)),
+          ),
+          Positioned(
+            bottom: 200,
+            left: -100,
+            child: _blob(300, Colors.orange.withOpacity(0.05)),
+          ),
+          Positioned(
+            top: 300,
+            right: -150,
+            child: _blob(400, AppColors.accent.withOpacity(0.06)),
+          ),
+          
+          // Main Content
+          IndexedStack(
+            index: nav.currentIndex,
+            children: _pages,
+          ),
+        ],
       ),
       bottomNavigationBar: Container(
         margin: const EdgeInsets.fromLTRB(24, 0, 24, 30),
@@ -57,10 +81,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
               ),
               child: BottomNavigationBar(
-                currentIndex: _selectedIndex,
-                onTap: (index) => setState(() => _selectedIndex = index),
+                currentIndex: nav.currentIndex,
+                onTap: (index) => nav.setTab(index),
                 type: BottomNavigationBarType.fixed,
-                backgroundColor: Colors.transparent, // Important
+                backgroundColor: Colors.transparent,
                 selectedItemColor: AppColors.primary,
                 unselectedItemColor: Colors.grey.shade400,
                 showSelectedLabels: true,
@@ -78,6 +102,21 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _blob(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+        child: Container(color: Colors.transparent),
       ),
     );
   }

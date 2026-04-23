@@ -123,4 +123,32 @@ class AuthProvider extends ChangeNotifier {
     _user = null;
     notifyListeners();
   }
+
+  Future<bool> updateProfile({String? name, String? username, String? level, double? cgpa}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.post('/user/update', {
+        if (name != null) 'name': name,
+        if (username != null) 'username': username,
+        if (level != null) 'level': level,
+        if (cgpa != null) 'cgpa': cgpa,
+      });
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _user = data['user'];
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Update profile error: $e');
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return false;
+  }
 }

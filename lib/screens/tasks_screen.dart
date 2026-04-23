@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -95,10 +96,11 @@ class _TasksScreenState extends State<TasksScreen> {
                   child: taskProvider.isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : tasks.isEmpty
-                      ? const Center(child: Text('No tasks found. Add one!'))
-                      : ListView.builder(
-                          itemCount: tasks.length,
-                          itemBuilder: (context, index) {
+                        ? const Center(child: Text('No tasks found. Add one!'))
+                        : ListView.builder(
+                            padding: const EdgeInsets.only(bottom: 110), // Padding for glass navbar
+                            itemCount: tasks.length,
+                            itemBuilder: (context, index) {
                             final task = tasks[index];
                             final isUrgent = task['is_urgent'] == 1 || task['is_urgent'] == true;
                             
@@ -154,14 +156,29 @@ class _TasksScreenState extends State<TasksScreen> {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Row(
-        children: [
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.7), width: 1.2),
+            ),
+            child: Row(
+              children: [
           GestureDetector(
             onTap: onToggle,
             child: Container(
@@ -212,7 +229,10 @@ class _TasksScreenState extends State<TasksScreen> {
             ),
           ),
           Icon(Icons.delete_outline, color: Colors.grey.shade300),
-        ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

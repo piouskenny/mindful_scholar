@@ -8,6 +8,9 @@ import '../core/providers/task_provider.dart';
 import '../core/providers/exam_provider.dart';
 import 'package:intl/intl.dart';
 import 'profile_screen.dart';
+import '../core/providers/navigation_provider.dart';
+import '../core/providers/utility_provider.dart';
+import 'notifications_screen.dart';
 
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
@@ -22,6 +25,8 @@ class _DashboardViewState extends State<DashboardView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TaskProvider>().fetchTasks();
+      context.read<UtilityProvider>().fetchDailyAffirmation();
+      context.read<UtilityProvider>().fetchNotifications();
       context.read<ExamProvider>().fetchExams().then((_) {
         _checkUpcomingExams();
       });
@@ -62,8 +67,8 @@ class _DashboardViewState extends State<DashboardView> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer3<AuthProvider, TaskProvider, ExamProvider>(
-      builder: (context, auth, taskProvider, examProvider, _) {
+    return Consumer4<AuthProvider, TaskProvider, ExamProvider, UtilityProvider>(
+      builder: (context, auth, taskProvider, examProvider, utilityProvider, _) {
         final user = auth.user;
         final name = user?['name'] ?? 'Scholar';
         final username = user?['username'] ?? 'Scholar';
@@ -93,13 +98,39 @@ class _DashboardViewState extends State<DashboardView> {
                       ),
                     ],
                   ),
-                  GestureDetector(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
-                    child: CircleAvatar(
-                      radius: 24,
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      child: Text(initial, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                    ),
+                  Row(
+                    children: [
+                      Stack(
+                        children: [
+                          IconButton(
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+                            icon: const Icon(Icons.notifications_none_rounded, size: 28),
+                          ),
+                          if (utilityProvider.hasNewNotifications)
+                            Positioned(
+                              right: 12,
+                              top: 12,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                        child: CircleAvatar(
+                          radius: 24,
+                          backgroundColor: AppColors.primary.withOpacity(0.1),
+                          child: Text(initial, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -108,8 +139,8 @@ class _DashboardViewState extends State<DashboardView> {
               if (auth.user?['school_id'] == null)
                 _completeProfilePrompt(context),
               
-              // Glassmorphism Insight Card
-              _glassInsightCard(),
+              // Glassmorphism Insight Card (Affirmation)
+              _glassInsightCard(utilityProvider.dailyAffirmation),
               
               const SizedBox(height: 40),
               
@@ -157,7 +188,10 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  Widget _glassInsightCard() {
+  Widget _glassInsightCard(Map<String, dynamic>? affirmation) {
+    final text = affirmation?['text'] ?? "Focus on the process, not just the outcome.";
+    final author = affirmation?['author'] ?? "Mindful Scholar";
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
       child: BackdropFilter(
@@ -177,18 +211,23 @@ class _DashboardViewState extends State<DashboardView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Daily Insight',
-                style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+              Text(
+                'Daily Affirmation',
+                style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5),
               ),
               const SizedBox(height: 12),
-              const Text(
-                '"Focus on the process, not just the outcome."',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontStyle: FontStyle.italic),
+              Text(
+                '"$text"',
+                style: GoogleFonts.inter(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontStyle: FontStyle.italic),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '— $author',
+                style: GoogleFonts.inter(color: Colors.white60, fontSize: 13, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () => context.read<NavigationProvider>().setTab(4),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white.withOpacity(0.2),
                   foregroundColor: Colors.white,
@@ -208,17 +247,27 @@ class _DashboardViewState extends State<DashboardView> {
     final color = isUrgent ? Colors.red : AppColors.primary;
     return Container(
       width: 170,
-      margin: const EdgeInsets.only(right: 20),
+      margin: const EdgeInsets.only(right: 20, bottom: 10), // Added bottom margin for shadow
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(28),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withOpacity(0.8),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white.withOpacity(0.5)),
+              border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,16 +297,26 @@ class _DashboardViewState extends State<DashboardView> {
     final isCompleted = task['is_completed'] == 1 || task['is_completed'] == true;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withOpacity(0.85),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.5)),
+              border: Border.all(color: Colors.white.withOpacity(0.7), width: 1.2),
             ),
             child: Row(
               children: [

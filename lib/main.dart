@@ -7,6 +7,8 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'core/providers/task_provider.dart';
 import 'core/providers/exam_provider.dart';
+import 'core/providers/navigation_provider.dart';
+import 'core/providers/utility_provider.dart';
 
 void main() {
   runApp(
@@ -15,6 +17,8 @@ void main() {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => TaskProvider()),
         ChangeNotifierProvider(create: (_) => ExamProvider()),
+        ChangeNotifierProvider(create: (_) => NavigationProvider()),
+        ChangeNotifierProvider(create: (_) => UtilityProvider()),
       ],
       child: const MindfulScholarApp(),
     ),

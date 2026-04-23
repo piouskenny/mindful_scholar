@@ -1,11 +1,66 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/providers/auth_provider.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isEditing = false;
+  late TextEditingController _nameController;
+  late TextEditingController _usernameController;
+  late TextEditingController _levelController;
+  late TextEditingController _cgpaController;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = context.read<AuthProvider>().user;
+    _nameController = TextEditingController(text: user?['name'] ?? '');
+    _usernameController = TextEditingController(text: user?['username'] ?? '');
+    _levelController = TextEditingController(text: user?['level'] ?? '');
+    _cgpaController = TextEditingController(text: (user?['cgpa'] ?? '').toString());
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _usernameController.dispose();
+    _levelController.dispose();
+    _cgpaController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveProfile() async {
+    final success = await context.read<AuthProvider>().updateProfile(
+      name: _nameController.text,
+      username: _usernameController.text,
+      level: _levelController.text,
+      cgpa: double.tryParse(_cgpaController.text),
+    );
+
+    if (success) {
+      setState(() => _isEditing = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully!')),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update profile. Please try again.')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +71,7 @@ class ProfileScreen extends StatelessWidget {
     final email = user?['email'] ?? '';
     final schoolId = user?['school_id'];
     final level = user?['level'] ?? 'Not set';
+    final cgpa = user?['cgpa'] ?? '0.00';
 
     // Find school name from auth provider schools list
     String schoolName = 'Not selected';
@@ -30,7 +86,7 @@ class ProfileScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -43,105 +99,245 @@ class ProfileScreen extends StatelessWidget {
           style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(_isEditing ? Icons.check : Icons.edit_outlined, color: AppColors.primary),
+            onPressed: () {
+              if (_isEditing) {
+                _saveProfile();
+              } else {
+                setState(() => _isEditing = true);
+              }
+            },
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            // Profile Header
-            Center(
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
-                    child: Text(
-                      name[0].toUpperCase(),
-                      style: GoogleFonts.inter(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+      body: auth.isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : Stack(
+            children: [
+              // Background Blobs
+              Positioned(
+                top: 50,
+                left: -50,
+                child: _blob(200, AppColors.primary.withOpacity(0.04)),
+              ),
+              Positioned(
+                bottom: 100,
+                right: -80,
+                child: _blob(300, AppColors.accent.withOpacity(0.04)),
+              ),
+              
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    // Profile Header
+                    Center(
+                      child: Column(
+                        children: [
+                          Stack(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: CircleAvatar(
+                                  radius: 50,
+                                  backgroundColor: Colors.white,
+                                  child: Text(
+                                    name[0].toUpperCase(),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (_isEditing)
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          if (!_isEditing) ...[
+                            Text(
+                              name,
+                              style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              '@$username',
+                              style: GoogleFonts.inter(color: Colors.grey, fontSize: 14),
+                            ),
+                          ] else ...[
+                            Text('Edit Profile Details', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                          ],
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    name,
-                    style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    '@$username',
-                    style: GoogleFonts.inter(color: Colors.grey, fontSize: 14),
-                  ),
-                ],
+                    
+                    const SizedBox(height: 40),
+                    
+                    // Form Fields
+                    if (_isEditing) ...[
+                      _editField('Full Name', _nameController, Icons.person_outline),
+                      _editField('Username', _usernameController, Icons.alternate_email),
+                      _editField('Academic Level', _levelController, Icons.leaderboard_outlined),
+                      _editField('Current CGPA', _cgpaController, Icons.analytics_outlined, keyboardType: TextInputType.number),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _saveProfile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 56),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Text('Save Changes'),
+                      ),
+                      TextButton(
+                        onPressed: () => setState(() => _isEditing = false),
+                        child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                      ),
+                    ] else ...[
+                      _glassProfileItem('Email', email, Icons.email_outlined),
+                      _glassProfileItem('University', schoolName, Icons.school_outlined),
+                      _glassProfileItem('Academic Level', level, Icons.leaderboard_outlined),
+                      _glassProfileItem('Current CGPA', cgpa.toString(), Icons.analytics_outlined),
+                    ],
+                    
+                    const SizedBox(height: 40),
+                    
+                    if (!_isEditing)
+                      ElevatedButton(
+                        onPressed: () {
+                          auth.logout();
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade50,
+                          foregroundColor: Colors.red,
+                          elevation: 0,
+                          minimumSize: const Size(double.infinity, 56),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            
-            const SizedBox(height: 40),
-            
-            // Info Sections
-            _profileItem('Email', email, Icons.email_outlined),
-            _profileItem('University', schoolName, Icons.school_outlined),
-            _profileItem('Academic Level', level, Icons.leaderboard_outlined),
-            
-            const SizedBox(height: 40),
-            
-            // Logout Button
-            ElevatedButton(
-              onPressed: () {
-                auth.logout();
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade50,
-                foregroundColor: Colors.red,
-                elevation: 0,
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
+            ],
+          ),
+    );
+  }
+
+  Widget _blob(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+        child: Container(color: Colors.transparent),
+      ),
+    );
+  }
+
+  Widget _editField(String label, TextEditingController controller, IconData icon, {TextInputType keyboardType = TextInputType.text}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: AppColors.primary),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.9),
         ),
       ),
     );
   }
 
-  Widget _profileItem(String label, String value, IconData icon) {
+  Widget _glassProfileItem(String label, String value, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: AppColors.primary, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.inter(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
-              ),
-            ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.5)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: GoogleFonts.inter(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        value,
+                        style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
