@@ -8,13 +8,16 @@ class AuthProvider extends ChangeNotifier {
   bool _isAuthenticated = false;
   Map<String, dynamic>? _user;
   bool _isLoading = false;
+  List<dynamic> _schools = [];
 
   bool get isAuthenticated => _isAuthenticated;
   Map<String, dynamic>? get user => _user;
   bool get isLoading => _isLoading;
+  List<dynamic> get schools => _schools;
 
   AuthProvider() {
     checkAuthStatus();
+    fetchSchools();
   }
 
   Future<void> checkAuthStatus() async {
@@ -22,12 +25,34 @@ class AuthProvider extends ChangeNotifier {
     final token = prefs.getString('auth_token');
     if (token != null) {
       _isAuthenticated = true;
-      // Optionally fetch user info here
+      // Fetch user profile to get school/level info
+      try {
+        final response = await _apiService.get('/user');
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          _user = data['user'];
+        }
+      } catch (e) {
+        debugPrint('Error fetching user on start: $e');
+      }
       notifyListeners();
     }
   }
 
-  Future<bool> register(String name, String username, String email, String password, String passwordConfirmation) async {
+  Future<void> fetchSchools() async {
+    try {
+      final response = await _apiService.get('/schools');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _schools = data['schools'];
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error fetching schools: $e');
+    }
+  }
+
+  Future<bool> register(String name, String username, String email, String password, String passwordConfirmation, {int? schoolId, String? level}) async {
     _isLoading = true;
     notifyListeners();
 
@@ -38,6 +63,8 @@ class AuthProvider extends ChangeNotifier {
         'email': email,
         'password': password,
         'password_confirmation': passwordConfirmation,
+        if (schoolId != null) 'school_id': schoolId,
+        if (level != null) 'level': level,
       });
 
       if (response.statusCode == 201 || response.statusCode == 200) {
