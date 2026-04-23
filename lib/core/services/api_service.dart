@@ -3,9 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // Use 10.0.2.2 for Android emulator to access localhost, 
-  // or a specific IP for real devices / iOS
-  static const String baseUrl = 'http://127.0.0.1:8000/api';
+  // Use 172.20.10.3 (your local IP) to allow real mobile devices to connect
+  static const String baseUrl = 'http://172.20.10.3:8000/api';
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
