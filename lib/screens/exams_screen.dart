@@ -1,5 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/app_colors.dart';
 import '../core/providers/exam_provider.dart';
 
@@ -21,209 +23,189 @@ class _ExamsScreenState extends State<ExamsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Consumer<ExamProvider>(
-        builder: (context, examProvider, _) {
-          final exams = examProvider.exams;
-          final nextExam = exams.isNotEmpty ? exams.first : null;
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Consumer<ExamProvider>(
+          builder: (context, examProvider, _) {
+            final exams = examProvider.exams;
+            final nextExam = exams.isNotEmpty ? exams.first : null;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Exam Countdown',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${exams.length} exams scheduled this semester',
-                  style: TextStyle(color: Colors.grey.shade600),
-                ),
-                const SizedBox(height: 32),
-                
-                // Hero Exam Card
-                if (nextExam != null)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardUrgent,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.cardUrgent.withOpacity(0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
+            return CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'NEXT EXAM',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
+                        Text(
+                          'Exam Countdown',
+                          style: GoogleFonts.inter(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 4),
                         Text(
-                          '${nextExam['course_code']}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            height: 1.3,
+                          '${exams.length} exams scheduled this semester',
+                          style: GoogleFonts.inter(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
                           ),
                         ),
                         const SizedBox(height: 32),
-                        Row(
-                          children: [
-                            const Text(
-                              'Soon',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Date set',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '${nextExam['date'] ?? 'TBD'}',
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                        
+                        // Glassmorphism Hero Card
+                        if (nextExam != null)
+                          _glassHeroCard(nextExam)
+                        else
+                          _emptyState('No exams scheduled'),
+                        
+                        const SizedBox(height: 40),
+                        
+                        Text(
+                          'Upcoming Schedule',
+                          style: GoogleFonts.inter(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
+                        const SizedBox(height: 16),
                       ],
                     ),
-                  )
-                else
-                  _emptyState('No exams scheduled'),
+                  ),
+                ),
                 
-                const SizedBox(height: 32),
-                
-                // Exam List
                 examProvider.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : Column(
-                      children: exams.map((exam) {
-                        return _examListItem(
-                          '?', // Days
-                          'days',
-                          exam['course_code'],
-                          'Course Details',
-                          'Date: ${exam['date'] ?? 'TBD'}',
-                          'Upcoming',
-                          Colors.blue.shade50,
-                          Colors.blue
-                        );
-                      }).toList(),
+                  ? const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final exam = exams[index];
+                            return _glassListItem(exam);
+                          },
+                          childCount: exams.length,
+                        ),
+                      ),
                     ),
+                const SliverToBoxAdapter(child: SizedBox(height: 100)),
               ],
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _emptyState(String message) {
+  Widget _glassHeroCard(Map<String, dynamic> exam) {
+    final days = exam['days_left'] ?? 0;
+    final isUrgent = days <= 3;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(40),
+      height: 220,
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.shade100),
+        borderRadius: BorderRadius.circular(30),
+        gradient: LinearGradient(
+          colors: isUrgent 
+            ? [Colors.red.shade400, Colors.red.shade700]
+            : [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isUrgent ? Colors.red : AppColors.primary).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-      child: Center(
-        child: Text(message, style: TextStyle(color: Colors.grey.shade400)),
-      ),
-    );
-  }
-
-  Widget _examListItem(String count, String unit, String code, String name, String detail, String urgency, Color urgencyBg, Color urgencyText) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Row(
+      child: Stack(
         children: [
-          // Days Circle
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: AppColors.cardLight,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  count,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.accentOrange),
-                ),
-                Text(
-                  unit,
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-              ],
+          // Decorative Circle
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.1),
+              ),
             ),
           ),
-          const SizedBox(width: 16),
-          // Info
-          Expanded(
+          Padding(
+            padding: const EdgeInsets.all(30),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  'NEXT EXAM',
+                  style: GoogleFonts.inter(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${exam['course_code']} — ${exam['course_name']}',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      code,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      '$days',
+                      style: GoogleFonts.playfairDisplay(
+                        color: Colors.white,
+                        fontSize: 60,
+                        fontWeight: FontWeight.bold,
+                        height: 1,
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    _badge(urgency, urgencyBg, urgencyText),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'days left',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            exam['exam_date_formatted'] ?? '',
+                            style: GoogleFonts.inter(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  name,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  detail,
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
                 ),
               ],
             ),
@@ -233,19 +215,148 @@ class _ExamsScreenState extends State<ExamsScreen> {
     );
   }
 
+  Widget _glassListItem(Map<String, dynamic> exam) {
+    final days = exam['days_left'] ?? 0;
+    final urgency = exam['urgency'] ?? 'low';
+    
+    Color urgencyColor;
+    String urgencyLabel;
+    
+    if (urgency == 'high' || days <= 3) {
+      urgencyColor = Colors.red;
+      urgencyLabel = 'Urgent';
+    } else if (urgency == 'medium' || days <= 7) {
+      urgencyColor = Colors.orange;
+      urgencyLabel = 'Soon';
+    } else {
+      urgencyColor = AppColors.primary;
+      urgencyLabel = 'Upcoming';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+            ),
+            child: Row(
+              children: [
+                // Days Badge
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: urgencyColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '$days',
+                        style: GoogleFonts.inter(
+                          fontSize: 22, 
+                          fontWeight: FontWeight.w800, 
+                          color: urgencyColor
+                        ),
+                      ),
+                      Text(
+                        'days',
+                        style: GoogleFonts.inter(fontSize: 10, color: urgencyColor.withOpacity(0.7)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 20),
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            exam['course_code'] ?? '',
+                            style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 8),
+                          _badge(urgencyLabel, urgencyColor.withOpacity(0.1), urgencyColor),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        exam['course_name'] ?? '',
+                        style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(Icons.access_time, size: 14, color: Colors.grey.shade400),
+                          const SizedBox(width: 4),
+                          Text(
+                            exam['exam_date_formatted'] ?? '',
+                            style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500),
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(Icons.location_on_outlined, size: 14, color: Colors.grey.shade400),
+                          const SizedBox(width: 4),
+                          Text(
+                            exam['venue'] ?? 'TBD',
+                            style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _badge(String label, Color bg, Color text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         label,
-        style: TextStyle(
+        style: GoogleFonts.inter(
           color: text,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyState(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.white.withOpacity(0.5)),
+      ),
+      child: Center(
+        child: Text(
+          message, 
+          style: GoogleFonts.inter(color: Colors.grey.shade500, fontWeight: FontWeight.w500)
         ),
       ),
     );
