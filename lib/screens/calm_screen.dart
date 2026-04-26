@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CalmScreen extends StatefulWidget {
   const CalmScreen({super.key});
@@ -55,26 +56,28 @@ class _CalmScreenState extends State<CalmScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Calm Space',
-                style: TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Take a moment for yourself',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                style: GoogleFonts.inter(color: isDark ? Colors.white60 : Colors.grey.shade600, fontSize: 16),
               ),
               const SizedBox(height: 32),
 
@@ -98,9 +101,9 @@ class _CalmScreenState extends State<CalmScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'BOX BREATHING',
-                        style: TextStyle(
+                        style: GoogleFonts.inter(
                           color: Colors.white70,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -133,7 +136,7 @@ class _CalmScreenState extends State<CalmScreen> {
                                 children: [
                                   Text(
                                     _breathStatus,
-                                    style: const TextStyle(
+                                    style: GoogleFonts.inter(
                                       color: Colors.white,
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
@@ -143,7 +146,7 @@ class _CalmScreenState extends State<CalmScreen> {
                                   if (_isBreathing)
                                     Text(
                                       '$_counter',
-                                      style: const TextStyle(
+                                      style: GoogleFonts.inter(
                                         color: Colors.white,
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -163,18 +166,18 @@ class _CalmScreenState extends State<CalmScreen> {
               const SizedBox(height: 40),
 
               // Wellness Tips Section
-              const Text(
+              Text(
                 'Wellness Tips',
-                style: TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
               const SizedBox(height: 16),
-              _tipTile('Pomodoro Technique', Colors.orange.shade50, Colors.orange),
-              _tipTile('Progressive Relaxation', Colors.deepOrange.shade50, Colors.deepOrange),
-              _tipTile('Active Recall', Colors.blue.shade50, Colors.blue),
+              _tipTile('Pomodoro Technique', Colors.orange.withOpacity(0.1), Colors.orange, isDark),
+              _tipTile('Progressive Relaxation', Colors.deepOrange.withOpacity(0.1), Colors.deepOrange, isDark),
+              _tipTile('Active Recall', Colors.blue.withOpacity(0.1), Colors.blue, isDark),
 
               const SizedBox(height: 32),
 
@@ -183,10 +186,13 @@ class _CalmScreenState extends State<CalmScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.cardLight.withOpacity(0.5),
+                  color: (isDark ? Colors.white : AppColors.surface).withOpacity(isDark ? 0.05 : 0.5),
                   borderRadius: BorderRadius.circular(20),
-                  border: const Border(
+                  border: Border(
                     left: BorderSide(color: AppColors.accent, width: 4),
+                    top: isDark ? BorderSide(color: Colors.white.withOpacity(0.05)) : BorderSide.none,
+                    right: isDark ? BorderSide(color: Colors.white.withOpacity(0.05)) : BorderSide.none,
+                    bottom: isDark ? BorderSide(color: Colors.white.withOpacity(0.05)) : BorderSide.none,
                   ),
                 ),
                 child: Column(
@@ -194,8 +200,8 @@ class _CalmScreenState extends State<CalmScreen> {
                   children: [
                     Text(
                       '"The secret of getting ahead is getting started."',
-                      style: TextStyle(
-                        color: AppColors.primary.withOpacity(0.8),
+                      style: GoogleFonts.inter(
+                        color: isDark ? Colors.white70 : AppColors.primary.withOpacity(0.8),
                         fontSize: 18,
                         fontStyle: FontStyle.italic,
                         fontWeight: FontWeight.w500,
@@ -203,17 +209,17 @@ class _CalmScreenState extends State<CalmScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       '— Daily affirmation',
-                      style: TextStyle(
-                        color: Colors.grey,
+                      style: GoogleFonts.inter(
+                        color: isDark ? Colors.white38 : Colors.grey,
                         fontSize: 13,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 80), // Space for bottom navbar
+              const SizedBox(height: 100), // Space for bottom navbar
             ],
           ),
         ),
@@ -221,14 +227,14 @@ class _CalmScreenState extends State<CalmScreen> {
     );
   }
 
-  Widget _tipTile(String title, Color bgColor, Color iconColor) {
+  Widget _tipTile(String title, Color bgColor, Color iconColor, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: (isDark ? Colors.black : Colors.white).withOpacity(0.8),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.05)),
       ),
       child: Row(
         children: [
@@ -244,13 +250,14 @@ class _CalmScreenState extends State<CalmScreen> {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
+                color: isDark ? Colors.white : Colors.black,
               ),
             ),
           ),
-          const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+          Icon(Icons.chevron_right, color: isDark ? Colors.white24 : Colors.grey, size: 20),
         ],
       ),
     );

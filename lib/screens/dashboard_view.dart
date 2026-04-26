@@ -67,12 +67,14 @@ class _DashboardViewState extends State<DashboardView> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Consumer4<AuthProvider, TaskProvider, ExamProvider, UtilityProvider>(
       builder: (context, auth, taskProvider, examProvider, utilityProvider, _) {
         final user = auth.user;
         final name = user?['name'] ?? 'Scholar';
         final username = user?['username'] ?? 'Scholar';
-        final displayName = username; // User requested username specifically
+        final displayName = username;
         final initial = name.isNotEmpty ? name[0].toUpperCase() : 'S';
 
         return SingleChildScrollView(
@@ -80,7 +82,6 @@ class _DashboardViewState extends State<DashboardView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -89,12 +90,12 @@ class _DashboardViewState extends State<DashboardView> {
                     children: [
                       Text(
                         DateFormat('EEEE, MMMM d').format(DateTime.now()),
-                        style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: 14),
+                        style: GoogleFonts.inter(color: isDark ? Colors.white60 : Colors.grey.shade600, fontSize: 14),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${_getGreeting()}, $displayName 👋',
-                        style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w800),
+                        style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black),
                       ),
                     ],
                   ),
@@ -104,7 +105,7 @@ class _DashboardViewState extends State<DashboardView> {
                         children: [
                           IconButton(
                             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
-                            icon: const Icon(Icons.notifications_none_rounded, size: 28),
+                            icon: Icon(Icons.notifications_none_rounded, size: 28, color: isDark ? Colors.white : Colors.black),
                           ),
                           if (utilityProvider.hasNewNotifications)
                             Positioned(
@@ -113,10 +114,7 @@ class _DashboardViewState extends State<DashboardView> {
                               child: Container(
                                 width: 8,
                                 height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
+                                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
                               ),
                             ),
                         ],
@@ -139,27 +137,35 @@ class _DashboardViewState extends State<DashboardView> {
               if (auth.user?['school_id'] == null)
                 _completeProfilePrompt(context),
               
-              // Glassmorphism Insight Card (Affirmation)
               _glassInsightCard(utilityProvider.dailyAffirmation),
               
               const SizedBox(height: 40),
               
-              // Upcoming Exams Section
-              _sectionHeader('Upcoming Exams'),
+              _sectionHeader('Upcoming Exams', isDark),
               const SizedBox(height: 16),
               SizedBox(
-                height: 160,
+                height: 180, // Increased height for hero card
                 child: examProvider.exams.isEmpty
-                  ? _emptyState('No upcoming exams')
+                  ? _emptyState('No upcoming exams', isDark)
                   : ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: examProvider.exams.length,
                       itemBuilder: (context, index) {
                         final exam = examProvider.exams[index];
                         final days = exam['days_left'] ?? 0;
+                        
+                        if (index == 0) {
+                          return _heroExamCard(
+                            exam['course_code'],
+                            days.toString(),
+                            isDark,
+                          );
+                        }
+                        
                         return _glassExamCard(
                           exam['course_code'], 
                           days.toString(),
+                          isDark,
                           isUrgent: days <= 3,
                         );
                       },
@@ -168,19 +174,18 @@ class _DashboardViewState extends State<DashboardView> {
               
               const SizedBox(height: 40),
               
-              // Today's Tasks
-              _sectionHeader('Today\'s Tasks'),
+              _sectionHeader('Today\'s Tasks', isDark),
               const SizedBox(height: 16),
               taskProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : taskProvider.tasks.isEmpty
-                  ? _emptyState('No tasks for today')
+                  ? _emptyState('No tasks for today', isDark)
                   : Column(
                       children: taskProvider.tasks.map((task) {
-                        return _glassTaskTile(task);
+                        return _glassTaskTile(task, isDark);
                       }).toList(),
                     ),
-              const SizedBox(height: 100), // Space for navbar
+              const SizedBox(height: 100),
             ],
           ),
         );
@@ -243,19 +248,125 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  Widget _glassExamCard(String code, String count, {bool isUrgent = false}) {
+  Widget _heroExamCard(String code, String count, bool isDark) {
+    return Container(
+      width: 260,
+      margin: const EdgeInsets.only(right: 20, bottom: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, Color(0xFF436850)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'NEXT EXAM',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const Icon(Icons.timer_outlined, color: Colors.white70, size: 16),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  code,
+                  style: GoogleFonts.inter(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                ),
+                const Spacer(),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      count,
+                      style: GoogleFonts.inter(
+                        fontSize: 48,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'DAYS',
+                            style: GoogleFonts.inter(
+                              color: Colors.white70,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            'TO START',
+                            style: GoogleFonts.inter(
+                              color: Colors.white70,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _glassExamCard(String code, String count, bool isDark, {bool isUrgent = false}) {
     final color = isUrgent ? Colors.red : AppColors.primary;
     return Container(
       width: 170,
-      margin: const EdgeInsets.only(right: 20, bottom: 10), // Added bottom margin for shadow
+      margin: const EdgeInsets.only(right: 20, bottom: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 15, offset: const Offset(0, 8)),
         ],
       ),
       child: ClipRRect(
@@ -265,16 +376,16 @@ class _DashboardViewState extends State<DashboardView> {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.8),
+              color: (isDark ? Colors.black : Colors.white).withOpacity(0.8),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
+              border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.05), width: 1.5),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Next exam', style: GoogleFonts.inter(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w600)),
+                Text('Upcoming', style: GoogleFonts.inter(color: isDark ? Colors.white60 : Colors.grey, fontSize: 11, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
-                Text(code, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800)),
+                Text(code, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black)),
                 const Spacer(),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -282,7 +393,7 @@ class _DashboardViewState extends State<DashboardView> {
                   children: [
                     Text(count, style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.w900, color: color)),
                     const SizedBox(width: 4),
-                    Text('days', style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
+                    Text('days', style: GoogleFonts.inter(fontSize: 14, color: isDark ? Colors.white38 : Colors.grey.shade500, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ],
@@ -293,18 +404,14 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  Widget _glassTaskTile(Map<String, dynamic> task) {
+  Widget _glassTaskTile(Map<String, dynamic> task, bool isDark) {
     final isCompleted = task['is_completed'] == 1 || task['is_completed'] == true;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.04), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: ClipRRect(
@@ -314,9 +421,9 @@ class _DashboardViewState extends State<DashboardView> {
           child: Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.85),
+              color: (isDark ? Colors.black : Colors.white).withOpacity(0.85),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.7), width: 1.2),
+              border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.05), width: 1.2),
             ),
             child: Row(
               children: [
@@ -327,7 +434,7 @@ class _DashboardViewState extends State<DashboardView> {
                     decoration: BoxDecoration(
                       color: isCompleted ? AppColors.primary : Colors.transparent,
                       shape: BoxShape.circle,
-                      border: Border.all(color: isCompleted ? AppColors.primary : Colors.grey.shade300, width: 2),
+                      border: Border.all(color: isCompleted ? AppColors.primary : Colors.grey.shade400, width: 2),
                     ),
                     child: Icon(Icons.check, size: 14, color: isCompleted ? Colors.white : Colors.transparent),
                   ),
@@ -343,7 +450,7 @@ class _DashboardViewState extends State<DashboardView> {
                           fontSize: 16, 
                           fontWeight: FontWeight.w600,
                           decoration: isCompleted ? TextDecoration.lineThrough : null,
-                          color: isCompleted ? Colors.grey : Colors.black,
+                          color: isCompleted ? Colors.grey : (isDark ? Colors.white : Colors.black),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -361,8 +468,8 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  Widget _sectionHeader(String title) {
-    return Text(title, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w800));
+  Widget _sectionHeader(String title, bool isDark) {
+    return Text(title, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black));
   }
 
   Widget _badge(String label, Color bg, Color text) {
@@ -373,16 +480,16 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  Widget _emptyState(String message) {
+  Widget _emptyState(String message, bool isDark) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.4),
+        color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.5)),
+        border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.05)),
       ),
-      child: Center(child: Text(message, style: GoogleFonts.inter(color: Colors.grey.shade500))),
+      child: Center(child: Text(message, style: GoogleFonts.inter(color: isDark ? Colors.white38 : Colors.grey.shade500))),
     );
   }
 
@@ -405,11 +512,6 @@ class _DashboardViewState extends State<DashboardView> {
           const SizedBox(height: 12),
           ElevatedButton(
             onPressed: () => context.read<AuthProvider>().logout(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 45),
-            ),
             child: const Text('Sign up with University'),
           ),
         ],

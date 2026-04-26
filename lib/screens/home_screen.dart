@@ -28,27 +28,28 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final nav = context.watch<NavigationProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       extendBody: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Decorative Background Blobs
           Positioned(
             top: -100,
             right: -50,
-            child: _blob(250, AppColors.primary.withOpacity(0.08)),
+            child: _blob(250, AppColors.primary.withOpacity(isDark ? 0.15 : 0.08)),
           ),
           Positioned(
             bottom: 200,
             left: -100,
-            child: _blob(300, Colors.orange.withOpacity(0.05)),
+            child: _blob(300, Colors.orange.withOpacity(isDark ? 0.1 : 0.05)),
           ),
           Positioned(
             top: 300,
             right: -150,
-            child: _blob(400, AppColors.accent.withOpacity(0.06)),
+            child: _blob(400, AppColors.accent.withOpacity(isDark ? 0.12 : 0.06)),
           ),
           
           // Main Content
@@ -64,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(35),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -76,17 +77,17 @@ class _HomeScreenState extends State<HomeScreen> {
             filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
+                color: (isDark ? Colors.black : Colors.white).withOpacity(0.7),
                 borderRadius: BorderRadius.circular(35),
-                border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+                border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.1), width: 1.5),
               ),
               child: BottomNavigationBar(
                 currentIndex: nav.currentIndex,
                 onTap: (index) => nav.setTab(index),
                 type: BottomNavigationBarType.fixed,
                 backgroundColor: Colors.transparent,
-                selectedItemColor: AppColors.primary,
-                unselectedItemColor: Colors.grey.shade400,
+                selectedItemColor: isDark ? AppColors.accentOrange : AppColors.primary,
+                unselectedItemColor: isDark ? Colors.white54 : Colors.grey.shade400,
                 showSelectedLabels: true,
                 showUnselectedLabels: false,
                 elevation: 0,

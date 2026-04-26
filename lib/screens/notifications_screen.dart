@@ -11,6 +11,7 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final utility = context.watch<UtilityProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Mark as read when screen is opened
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -18,17 +19,17 @@ class NotificationsScreen extends StatelessWidget {
     });
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, color: isDark ? Colors.white : Colors.black, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Notifications',
-          style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -38,24 +39,24 @@ class NotificationsScreen extends StatelessWidget {
           Positioned(
             top: 100,
             right: -50,
-            child: _blob(200, AppColors.primary.withOpacity(0.05)),
+            child: _blob(200, AppColors.primary.withOpacity(isDark ? 0.1 : 0.05)),
           ),
           Positioned(
             bottom: 100,
             left: -50,
-            child: _blob(250, Colors.blue.withOpacity(0.05)),
+            child: _blob(250, Colors.blue.withOpacity(isDark ? 0.1 : 0.05)),
           ),
           
           utility.isLoading
               ? const Center(child: CircularProgressIndicator())
               : utility.notifications.isEmpty
-                  ? _emptyState()
+                  ? _emptyState(isDark)
                   : ListView.builder(
                       padding: const EdgeInsets.all(24),
                       itemCount: utility.notifications.length,
                       itemBuilder: (context, index) {
                         final note = utility.notifications[index];
-                        return _notificationCard(note);
+                        return _notificationCard(note, isDark);
                       },
                     ),
         ],
@@ -78,7 +79,7 @@ class NotificationsScreen extends StatelessWidget {
     );
   }
 
-  Widget _notificationCard(Map<String, dynamic> note) {
+  Widget _notificationCard(Map<String, dynamic> note, bool isDark) {
     final type = note['type'] ?? 'info';
     Color accentColor;
     IconData icon;
@@ -93,7 +94,7 @@ class NotificationsScreen extends StatelessWidget {
         icon = Icons.newspaper_rounded;
         break;
       default:
-        accentColor = AppColors.primary;
+        accentColor = isDark ? AppColors.accentOrange : AppColors.primary;
         icon = Icons.info_outline_rounded;
     }
 
@@ -103,7 +104,7 @@ class NotificationsScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
             blurRadius: 15,
             offset: const Offset(0, 6),
           ),
@@ -116,9 +117,9 @@ class NotificationsScreen extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.8),
+              color: (isDark ? Colors.black : Colors.white).withOpacity(0.8),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
+              border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.05), width: 1.5),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,7 +142,7 @@ class NotificationsScreen extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -149,16 +150,16 @@ class NotificationsScreen extends StatelessWidget {
                         note['message'] ?? '',
                         style: GoogleFonts.inter(
                           fontSize: 14,
-                          color: Colors.grey.shade600,
+                          color: isDark ? Colors.white60 : Colors.grey.shade600,
                           height: 1.4,
                         ),
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Just now', // You could format the timestamp here
+                        'Just now',
                         style: GoogleFonts.inter(
                           fontSize: 11,
-                          color: Colors.grey.shade400,
+                          color: isDark ? Colors.white38 : Colors.grey.shade400,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -173,26 +174,26 @@ class NotificationsScreen extends StatelessWidget {
     );
   }
 
-  Widget _emptyState() {
+  Widget _emptyState(bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.notifications_none_rounded, size: 80, color: Colors.grey.shade200),
+          Icon(Icons.notifications_none_rounded, size: 80, color: isDark ? Colors.white10 : Colors.grey.shade200),
           const SizedBox(height: 16),
           Text(
             'All caught up!',
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade400,
+              color: isDark ? Colors.white38 : Colors.grey.shade400,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'No new announcements for now.',
             style: GoogleFonts.inter(
-              color: Colors.grey.shade400,
+              color: isDark ? Colors.white30 : Colors.grey.shade400,
             ),
           ),
         ],

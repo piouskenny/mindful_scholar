@@ -151,4 +151,32 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     return false;
   }
+
+  Future<bool> uploadProfilePicture(String filePath) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.multipartPost('/user/profile-picture', filePath);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        // Refresh user data to get the new profile picture URL
+        final userResponse = await _apiService.get('/user');
+        if (userResponse.statusCode == 200) {
+          final userData = jsonDecode(userResponse.body);
+          _user = userData['user'];
+        }
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Upload profile picture error: $e');
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return false;
+  }
 }

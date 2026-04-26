@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Text(
                 'Your academic companion awaits.',
                 style: TextStyle(
-                  color: AppColors.secondaryText,
+                  color: AppColors.textSecondary,
                   fontSize: 16,
                 ),
               ),
@@ -149,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: RichText(
                   text: TextSpan(
                     text: 'New here? ',
-                    style: const TextStyle(color: AppColors.secondaryText),
+                    style: const TextStyle(color: AppColors.textSecondary),
                     children: [
                       WidgetSpan(
                         alignment: PlaceholderAlignment.middle,

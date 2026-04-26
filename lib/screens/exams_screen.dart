@@ -23,8 +23,10 @@ class _ExamsScreenState extends State<ExamsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Consumer<ExamProvider>(
           builder: (context, examProvider, _) {
@@ -45,23 +47,23 @@ class _ExamsScreenState extends State<ExamsScreen> {
                             fontSize: 32,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -1,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${exams.length} exams scheduled this semester',
                           style: GoogleFonts.inter(
-                            color: Colors.grey.shade600,
+                            color: isDark ? Colors.white60 : Colors.grey.shade600,
                             fontSize: 16,
                           ),
                         ),
                         const SizedBox(height: 32),
                         
-                        // Glassmorphism Hero Card
                         if (nextExam != null)
-                          _glassHeroCard(nextExam)
+                          _glassHeroCard(nextExam, isDark)
                         else
-                          _emptyState('No exams scheduled'),
+                          _emptyState('No exams scheduled', isDark),
                         
                         const SizedBox(height: 40),
                         
@@ -70,6 +72,7 @@ class _ExamsScreenState extends State<ExamsScreen> {
                           style: GoogleFonts.inter(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -88,7 +91,7 @@ class _ExamsScreenState extends State<ExamsScreen> {
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
                             final exam = exams[index];
-                            return _glassListItem(exam);
+                            return _glassListItem(exam, isDark);
                           },
                           childCount: exams.length,
                         ),
@@ -103,7 +106,7 @@ class _ExamsScreenState extends State<ExamsScreen> {
     );
   }
 
-  Widget _glassHeroCard(Map<String, dynamic> exam) {
+  Widget _glassHeroCard(Map<String, dynamic> exam, bool isDark) {
     final days = exam['days_left'] ?? 0;
     final isUrgent = days <= 3;
 
@@ -129,7 +132,6 @@ class _ExamsScreenState extends State<ExamsScreen> {
       ),
       child: Stack(
         children: [
-          // Decorative Circle
           Positioned(
             right: -20,
             top: -20,
@@ -215,7 +217,7 @@ class _ExamsScreenState extends State<ExamsScreen> {
     );
   }
 
-  Widget _glassListItem(Map<String, dynamic> exam) {
+  Widget _glassListItem(Map<String, dynamic> exam, bool isDark) {
     final days = exam['days_left'] ?? 0;
     final urgency = exam['urgency'] ?? 'low';
     
@@ -229,7 +231,7 @@ class _ExamsScreenState extends State<ExamsScreen> {
       urgencyColor = Colors.orange;
       urgencyLabel = 'Soon';
     } else {
-      urgencyColor = AppColors.primary;
+      urgencyColor = isDark ? AppColors.accentOrange : AppColors.primary;
       urgencyLabel = 'Upcoming';
     }
 
@@ -238,11 +240,7 @@ class _ExamsScreenState extends State<ExamsScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.04), blurRadius: 15, offset: const Offset(0, 6)),
         ],
       ),
       child: ClipRRect(
@@ -252,13 +250,12 @@ class _ExamsScreenState extends State<ExamsScreen> {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.8),
+              color: (isDark ? Colors.black : Colors.white).withOpacity(0.8),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
+              border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.05), width: 1.5),
             ),
             child: Row(
               children: [
-                // Days Badge
                 Container(
                   width: 60,
                   height: 60,
@@ -285,7 +282,6 @@ class _ExamsScreenState extends State<ExamsScreen> {
                   ),
                 ),
                 const SizedBox(width: 20),
-                // Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,7 +290,7 @@ class _ExamsScreenState extends State<ExamsScreen> {
                         children: [
                           Text(
                             exam['course_code'] ?? '',
-                            style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.bold),
+                            style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
                           ),
                           const SizedBox(width: 8),
                           _badge(urgencyLabel, urgencyColor.withOpacity(0.1), urgencyColor),
@@ -303,25 +299,25 @@ class _ExamsScreenState extends State<ExamsScreen> {
                       const SizedBox(height: 4),
                       Text(
                         exam['course_name'] ?? '',
-                        style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade600),
+                        style: GoogleFonts.inter(fontSize: 14, color: isDark ? Colors.white60 : Colors.grey.shade600),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          Icon(Icons.access_time, size: 14, color: Colors.grey.shade400),
+                          Icon(Icons.access_time, size: 14, color: isDark ? Colors.white38 : Colors.grey.shade400),
                           const SizedBox(width: 4),
                           Text(
                             exam['exam_date_formatted'] ?? '',
-                            style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500),
+                            style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white38 : Colors.grey.shade500),
                           ),
                           const SizedBox(width: 12),
-                          Icon(Icons.location_on_outlined, size: 14, color: Colors.grey.shade400),
+                          Icon(Icons.location_on_outlined, size: 14, color: isDark ? Colors.white38 : Colors.grey.shade400),
                           const SizedBox(width: 4),
                           Text(
                             exam['venue'] ?? 'TBD',
-                            style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500),
+                            style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white38 : Colors.grey.shade500),
                           ),
                         ],
                       ),
@@ -339,34 +335,24 @@ class _ExamsScreenState extends State<ExamsScreen> {
   Widget _badge(String label, Color bg, Color text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          color: text,
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+      child: Text(label, style: GoogleFonts.inter(color: text, fontSize: 10, fontWeight: FontWeight.w800)),
     );
   }
 
-  Widget _emptyState(String message) {
+  Widget _emptyState(String message, bool isDark) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.5),
+        color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withOpacity(0.5)),
+        border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.05)),
       ),
       child: Center(
         child: Text(
           message, 
-          style: GoogleFonts.inter(color: Colors.grey.shade500, fontWeight: FontWeight.w500)
+          style: GoogleFonts.inter(color: isDark ? Colors.white38 : Colors.grey.shade500, fontWeight: FontWeight.w500)
         ),
       ),
     );

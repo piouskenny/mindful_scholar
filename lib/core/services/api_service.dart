@@ -1,10 +1,22 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class ApiService {
-  // Use 172.20.10.3 (your local IP) to allow real mobile devices to connect
-  static const String baseUrl = 'http://172.20.10.3:8000/api';
+  // Base URL logic:
+  // - 127.0.0.1:8000 for Chrome/Web
+  // - 10.0.2.2:8000 for Android Emulator
+  // - 172.20.10.3:8000 for Real Devices (Change to your computer's IP)
+  
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://127.0.0.1:8000/api';
+    } else {
+      // For mobile devices, use the computer's network IP
+      return 'http://172.20.10.3:8000/api';
+    }
+  }
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -46,5 +58,26 @@ class ApiService {
   Future<http.Response> delete(String endpoint) async {
     final headers = await _getHeaders();
     return await http.delete(Uri.parse('$baseUrl$endpoint'), headers: headers);
+  }
+
+  Future<http.Response> multipartPost(String endpoint, String filePath, {String fieldName = 'image'}) async {
+    final token = await _getToken();
+    final uri = Uri.parse('$baseUrl$endpoint');
+    final request = http.MultipartRequest('POST', uri);
+    
+    request.headers.addAll({
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    });
+
+    if (kIsWeb) {
+      // On web, we might need a different approach if using XFile.bytes
+      // But standard multipart might work if filePath is handled by http
+    }
+    
+    request.files.add(await http.MultipartFile.fromPath(fieldName, filePath));
+    
+    final streamedResponse = await request.send();
+    return await http.Response.fromStream(streamedResponse);
   }
 }

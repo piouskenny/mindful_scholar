@@ -9,6 +9,7 @@ import 'core/providers/task_provider.dart';
 import 'core/providers/exam_provider.dart';
 import 'core/providers/navigation_provider.dart';
 import 'core/providers/utility_provider.dart';
+import 'core/providers/theme_provider.dart';
 
 void main() {
   runApp(
@@ -19,6 +20,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => ExamProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => UtilityProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: const MindfulScholarApp(),
     ),
@@ -30,51 +32,14 @@ class MindfulScholarApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+
     return MaterialApp(
       title: 'Mindful Scholar',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          primary: AppColors.primary,
-        ),
-        textTheme: GoogleFonts.interTextTheme(
-          Theme.of(context).textTheme,
-        ).copyWith(
-          displayLarge: GoogleFonts.playfairDisplay(
-            textStyle: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: AppColors.textFieldBg,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            minimumSize: const Size(double.infinity, 56),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 0,
-            textStyle: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
+      themeMode: themeProvider.themeMode,
+      theme: _buildLightTheme(context),
+      darkTheme: _buildDarkTheme(context),
       home: Consumer<AuthProvider>(
         builder: (context, auth, _) {
           if (auth.isAuthenticated) {
@@ -82,6 +47,59 @@ class MindfulScholarApp extends StatelessWidget {
           }
           return const LoginScreen();
         },
+      ),
+    );
+  }
+
+  ThemeData _buildLightTheme(BuildContext context) {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: AppColors.background,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.primary,
+        primary: AppColors.primary,
+        surface: AppColors.surface,
+      ),
+      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme).copyWith(
+        displayLarge: GoogleFonts.playfairDisplay(
+          textStyle: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+        ),
+      ),
+      elevatedButtonTheme: _elevatedButtonTheme(),
+    );
+  }
+
+  ThemeData _buildDarkTheme(BuildContext context) {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: AppColors.backgroundDark,
+      colorScheme: ColorScheme.fromSeed(
+        brightness: Brightness.dark,
+        seedColor: AppColors.primary,
+        primary: AppColors.primary,
+        surface: AppColors.surfaceDark,
+        background: AppColors.backgroundDark,
+      ),
+      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
+        displayLarge: GoogleFonts.playfairDisplay(
+          textStyle: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      ),
+      elevatedButtonTheme: _elevatedButtonTheme(),
+    );
+  }
+
+  ElevatedButtonThemeData _elevatedButtonTheme() {
+    return ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        minimumSize: const Size(double.infinity, 56),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 0,
+        textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
       ),
     );
   }

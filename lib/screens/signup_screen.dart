@@ -52,7 +52,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const Text(
                 'Start your mindful academic journey.',
                 style: TextStyle(
-                  color: AppColors.secondaryText,
+                  color: AppColors.textSecondary,
                   fontSize: 16,
                 ),
               ),
@@ -186,7 +186,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: RichText(
                     text: const TextSpan(
                       text: 'Already have an account? ',
-                      style: TextStyle(color: AppColors.secondaryText),
+                      style: TextStyle(color: AppColors.textSecondary),
                       children: [
                         TextSpan(
                           text: 'Sign In',
