@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../core/theme/app_colors.dart';
 import '../core/providers/chatbot_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -44,9 +45,16 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      drawer: _buildHistoryDrawer(context, isDark, chatbotProvider),
       appBar: AppBar(
         backgroundColor: (isDark ? Colors.black : Colors.white).withOpacity(0.8),
         elevation: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         flexibleSpace: ClipRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -56,23 +64,23 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Row(
           children: [
             CircleAvatar(
-              radius: 20,
+              radius: 18,
               backgroundColor: AppColors.primary.withOpacity(0.1),
-              child: const Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 20),
+              child: const Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 18),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Mindful AI',
-                  style: GoogleFonts.inter(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.inter(color: isDark ? Colors.white : Colors.black, fontSize: 15, fontWeight: FontWeight.bold),
                 ),
                 Row(
                   children: [
                     Container(
-                      width: 8,
-                      height: 8,
+                      width: 6,
+                      height: 6,
                       decoration: BoxDecoration(
                         color: chatbotProvider.isSending ? Colors.grey : Colors.orange, 
                         shape: BoxShape.circle
@@ -83,7 +91,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       chatbotProvider.isSending ? 'Thinking...' : 'Online',
                       style: GoogleFonts.inter(
                         color: chatbotProvider.isSending ? Colors.grey : Colors.orange, 
-                        fontSize: 12, 
+                        fontSize: 11, 
                         fontWeight: FontWeight.w500
                       ),
                     ),
@@ -95,9 +103,9 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline_rounded),
-            onPressed: () => _showClearChatDialog(context),
-            tooltip: 'Clear history',
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: () => context.read<ChatbotProvider>().fetchHistory(),
+            tooltip: 'Refresh chat',
           ),
         ],
       ),
@@ -197,6 +205,113 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Widget _buildHistoryDrawer(BuildContext context, bool isDark, ChatbotProvider provider) {
+    return Drawer(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      child: Column(
+        children: [
+          _buildDrawerHeader(isDark),
+          Expanded(
+            child: provider.messages.isEmpty
+                ? _buildEmptyHistory(isDark)
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: provider.messages.length,
+                    itemBuilder: (context, index) {
+                      final message = provider.messages[index];
+                      if (message.isBot) return const SizedBox.shrink(); // Only show user prompts in history list
+                      return ListTile(
+                        leading: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
+                        title: Text(
+                          message.message,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(fontSize: 14, color: isDark ? Colors.white70 : Colors.black87),
+                        ),
+                        subtitle: Text(
+                          _formatDate(message.createdAt),
+                          style: GoogleFonts.inter(fontSize: 11, color: isDark ? Colors.white38 : Colors.black38),
+                        ),
+                        onTap: () {
+                          Navigator.pop(context); // Close drawer
+                          // Optionally scroll to this message in the main list
+                        },
+                      );
+                    },
+                  ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent),
+            title: Text(
+              'Clear History',
+              style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              _showClearChatDialog(context);
+            },
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerHeader(bool isDark) {
+    return DrawerHeader(
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        border: Border(bottom: BorderSide(color: (isDark ? Colors.white : Colors.black).withOpacity(0.05))),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.history_rounded, color: AppColors.primary),
+              const SizedBox(width: 12),
+              Text(
+                'Chat History',
+                style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Your recent conversations with Mindful AI',
+            style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyHistory(bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.history_toggle_off_rounded, size: 48, color: isDark ? Colors.white10 : Colors.black12),
+          const SizedBox(height: 12),
+          Text(
+            'No history yet',
+            style: GoogleFonts.inter(color: isDark ? Colors.white38 : Colors.black38),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    if (difference.inDays == 0) return 'Today';
+    if (difference.inDays == 1) return 'Yesterday';
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
   void _handleSend() {
     final text = _messageController.text.trim();
     if (text.isNotEmpty) {
@@ -277,9 +392,20 @@ class _ChatScreenState extends State<ChatScreen> {
                 BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.03), blurRadius: 10, offset: const Offset(0, 4)),
               ],
             ),
-            child: Text(
-              text,
-              style: GoogleFonts.inter(fontSize: 15, height: 1.5, color: isDark ? Colors.white : Colors.black87),
+            child: MarkdownBody(
+              data: text,
+              styleSheet: MarkdownStyleSheet(
+                p: GoogleFonts.inter(fontSize: 15, height: 1.5, color: isDark ? Colors.white : Colors.black87),
+                h1: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
+                h2: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
+                listBullet: GoogleFonts.inter(fontSize: 15, color: isDark ? Colors.white70 : Colors.black54),
+                strong: const TextStyle(fontWeight: FontWeight.bold),
+                em: const TextStyle(fontStyle: FontStyle.italic),
+                code: TextStyle(
+                  backgroundColor: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+                  fontFamily: 'monospace',
+                ),
+              ),
             ),
           ),
         ),
