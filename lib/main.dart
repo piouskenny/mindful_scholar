@@ -10,6 +10,7 @@ import 'core/providers/exam_provider.dart';
 import 'core/providers/navigation_provider.dart';
 import 'core/providers/utility_provider.dart';
 import 'core/providers/theme_provider.dart';
+import 'core/providers/chatbot_provider.dart';
 
 void main() {
   runApp(
@@ -21,6 +22,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => UtilityProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => ChatbotProvider()),
       ],
       child: const MindfulScholarApp(),
     ),
@@ -67,6 +69,11 @@ class MindfulScholarApp extends StatelessWidget {
         ),
       ),
       elevatedButtonTheme: _elevatedButtonTheme(),
+      inputDecorationTheme: const InputDecorationTheme(
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.black, width: 2.0),
+        ),
+      ),
     );
   }
 

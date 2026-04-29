@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/providers/auth_provider.dart';
+import 'otp_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -62,6 +63,7 @@ class _SignupScreenState extends State<SignupScreen> {
               _label('FULL NAME'),
               TextField(
                 controller: _nameController,
+                style: const TextStyle(color: Colors.black),
                 decoration: const InputDecoration(hintText: 'Chidi Okeke'),
               ),
               const SizedBox(height: 24),
@@ -70,6 +72,7 @@ class _SignupScreenState extends State<SignupScreen> {
               _label('USERNAME'),
               TextField(
                 controller: _usernameController,
+                style: const TextStyle(color: Colors.black),
                 decoration: const InputDecoration(hintText: 'chidi_scholar'),
               ),
               const SizedBox(height: 24),
@@ -78,6 +81,7 @@ class _SignupScreenState extends State<SignupScreen> {
               _label('EMAIL'),
               TextField(
                 controller: _emailController,
+                style: const TextStyle(color: Colors.black),
                 decoration: const InputDecoration(hintText: 'you@university.edu'),
               ),
               const SizedBox(height: 24),
@@ -88,13 +92,24 @@ class _SignupScreenState extends State<SignupScreen> {
                 builder: (context, auth, _) {
                   return DropdownButtonFormField<int>(
                     value: _selectedSchoolId,
-                    items: auth.schools.map((school) {
-                      return DropdownMenuItem<int>(
-                        value: school['id'],
-                        child: Text(school['name']),
-                      );
-                    }).toList(),
-                    onChanged: (val) => setState(() => _selectedSchoolId = val),
+                    isExpanded: true,
+                    style: const TextStyle(color: Colors.black),
+                    dropdownColor: Colors.white,
+                    items: auth.schools.isEmpty 
+                      ? [const DropdownMenuItem<int>(value: -1, child: Text('Loading schools...', style: TextStyle(color: Colors.black)))]
+                      : auth.schools.map((school) {
+                          return DropdownMenuItem<int>(
+                            value: int.tryParse(school['id'].toString()) ?? 0,
+                            child: Text(school['name'].toString(), style: const TextStyle(color: Colors.black)),
+                          );
+                        }).toList(),
+                    onChanged: auth.schools.isEmpty 
+                      ? null 
+                      : (val) {
+                          if (val != null && val != -1) {
+                            setState(() => _selectedSchoolId = val);
+                          }
+                        },
                     decoration: const InputDecoration(hintText: 'Choose your school'),
                   );
                 },
@@ -105,10 +120,13 @@ class _SignupScreenState extends State<SignupScreen> {
               _label('CURRENT LEVEL'),
               DropdownButtonFormField<String>(
                 value: _selectedLevel,
+                isExpanded: true,
+                style: const TextStyle(color: Colors.black),
+                dropdownColor: Colors.white,
                 items: _levels.map((level) {
                   return DropdownMenuItem<String>(
                     value: level,
-                    child: Text(level),
+                    child: Text(level, style: const TextStyle(color: Colors.black)),
                   );
                 }).toList(),
                 onChanged: (val) => setState(() => _selectedLevel = val),
@@ -121,6 +139,7 @@ class _SignupScreenState extends State<SignupScreen> {
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
+                style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
                   hintText: '••••••••',
                   suffixIcon: IconButton(
@@ -139,6 +158,7 @@ class _SignupScreenState extends State<SignupScreen> {
               TextField(
                 controller: _confirmPasswordController,
                 obscureText: _obscurePassword,
+                style: const TextStyle(color: Colors.black),
                 decoration: const InputDecoration(hintText: '••••••••'),
               ),
               const SizedBox(height: 32),
@@ -166,7 +186,12 @@ class _SignupScreenState extends State<SignupScreen> {
                           );
                           
                           if (success && mounted) {
-                            Navigator.pop(context);
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => OtpScreen(email: _emailController.text),
+                              ),
+                            );
                           } else if (mounted) {
                             _showError('Registration failed. Please try again.');
                           }

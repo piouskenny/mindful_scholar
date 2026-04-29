@@ -68,11 +68,6 @@ class AuthProvider extends ChangeNotifier {
       });
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', data['token']);
-        _user = data['user'];
-        _isAuthenticated = true;
         _isLoading = false;
         notifyListeners();
         return true;
@@ -86,7 +81,48 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
-  Future<bool> login(String email, String password) async {
+  Future<bool> verifyOtp(String email, String otp) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.post('/verify-otp', {
+        'email': email,
+        'otp': otp,
+      });
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', data['token']);
+        _user = data['user'];
+        _isAuthenticated = true;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Verify OTP error: $e');
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return false;
+  }
+
+  Future<bool> resendOtp(String email) async {
+    try {
+      final response = await _apiService.post('/resend-otp', {
+        'email': email,
+      });
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('Resend OTP error: $e');
+      return false;
+    }
+  }
+
+  Future<String?> login(String email, String password) async {
     _isLoading = true;
     notifyListeners();
 
@@ -104,7 +140,14 @@ class AuthProvider extends ChangeNotifier {
         _isAuthenticated = true;
         _isLoading = false;
         notifyListeners();
-        return true;
+        return null;
+      } else if (response.statusCode == 403) {
+        final data = jsonDecode(response.body);
+        if (data['email_not_verified'] == true) {
+          _isLoading = false;
+          notifyListeners();
+          return 'unverified';
+        }
       }
     } catch (e) {
       debugPrint('Login error: $e');
@@ -112,7 +155,7 @@ class AuthProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
-    return false;
+    return 'Invalid credentials';
   }
 
   Future<void> logout() async {

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/providers/auth_provider.dart';
 import 'signup_screen.dart';
+import 'otp_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -74,6 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 8),
               TextField(
                 controller: _emailController,
+                style: const TextStyle(color: Colors.black),
                 decoration: const InputDecoration(
                   hintText: 'you@university.edu',
                 ),
@@ -93,6 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
+                style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
                   hintText: '••••••••',
                   suffixIcon: IconButton(
@@ -127,14 +130,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: auth.isLoading 
                       ? null 
                       : () async {
-                          final success = await auth.login(
+                          final result = await auth.login(
                             _emailController.text, 
                             _passwordController.text
                           );
-                          if (!success && mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Login failed. Please check your credentials.')),
-                            );
+                          if (result != null && mounted) {
+                            if (result == 'unverified') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => OtpScreen(email: _emailController.text),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(result)),
+                              );
+                            }
                           }
                         },
                     child: auth.isLoading 

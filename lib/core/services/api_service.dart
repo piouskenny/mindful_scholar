@@ -3,18 +3,20 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 
+import 'dart:io' show Platform;
+
 class ApiService {
   // Base URL logic:
-  // - 127.0.0.1:8000 for Chrome/Web
+  // - 127.0.0.1:8000 for Chrome/Web/Desktop/iOS Simulator
   // - 10.0.2.2:8000 for Android Emulator
-  // - 172.20.10.3:8000 for Real Devices (Change to your computer's IP)
   
   static String get baseUrl {
     if (kIsWeb) {
       return 'http://127.0.0.1:8000/api';
+    } else if (Platform.isAndroid) {
+      return 'http://10.0.2.2:8000/api';
     } else {
-      // For mobile devices, use the computer's network IP
-      return 'http://172.20.10.3:8000/api';
+      return 'http://127.0.0.1:8000/api';
     }
   }
 
