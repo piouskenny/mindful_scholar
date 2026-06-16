@@ -211,6 +211,26 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Column(
         children: [
           _buildDrawerHeader(isDark),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                _showClearChatDialog(context);
+              },
+              icon: const Icon(Icons.add_rounded, color: Colors.white),
+              label: Text(
+                'New Chat',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+            ),
+          ),
           Expanded(
             child: provider.messages.isEmpty
                 ? _buildEmptyHistory(isDark)
