@@ -174,14 +174,43 @@ class _DashboardViewState extends State<DashboardView> {
               
               const SizedBox(height: 40),
               
-              _sectionHeader('Today\'s Tasks', isDark),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _sectionHeader('Today\'s Tasks', isDark),
+                  if (taskProvider.schoolTasksDueToday.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.orange.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('⚠️', style: TextStyle(fontSize: 12)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${taskProvider.schoolTasksDueToday.length} school due',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.orange.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 16),
               taskProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : taskProvider.tasks.isEmpty
+                : taskProvider.allTasks.isEmpty
                   ? _emptyState('No tasks for today', isDark)
                   : Column(
-                      children: taskProvider.tasks.map((task) {
+                      children: taskProvider.allTasks.take(5).map((task) {
                         return _glassTaskTile(task, isDark);
                       }).toList(),
                     ),
@@ -406,12 +435,41 @@ class _DashboardViewState extends State<DashboardView> {
 
   Widget _glassTaskTile(Map<String, dynamic> task, bool isDark) {
     final isCompleted = task['is_completed'] == 1 || task['is_completed'] == true;
+    final type = task['task_type'] ?? 'other';
+    final isSchool = {'assignment', 'reading', 'project'}.contains(type);
+    final typeEmoji = {
+      'assignment': '📚', 'reading': '📖', 'project': '💼',
+      'fun': '🎮', 'other': '✏️'
+    }[type] ?? '✏️';
+
+    // Deadline urgency
+    Color dlColor = Colors.grey;
+    String dlLabel = task['due_date'] ?? '';
+    if (task['due_date'] != null) {
+      try {
+        final due = DateTime.parse(task['due_date']);
+        final diff = due.difference(DateTime.now());
+        if (diff.inHours <= 24 && diff.inHours >= 0) {
+          dlColor = Colors.red;
+          dlLabel = diff.inHours <= 1 ? '< 1hr!' : '${diff.inHours}h left';
+        } else if (diff.inDays <= 3) {
+          dlColor = Colors.orange;
+          dlLabel = '${diff.inDays}d left';
+        } else {
+          dlColor = const Color(0xFF48BB78);
+          dlLabel = DateFormat('MMM d').format(due);
+        }
+      } catch (_) {}
+    }
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.04), blurRadius: 10, offset: const Offset(0, 4)),
+          if (isSchool && !isCompleted)
+            BoxShadow(color: AppColors.primary.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withOpacity(isDark ? 0.18 : 0.04), blurRadius: 8, offset: const Offset(0, 3)),
         ],
       ),
       child: ClipRRect(
@@ -419,47 +477,86 @@ class _DashboardViewState extends State<DashboardView> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: (isDark ? Colors.black : Colors.white).withOpacity(0.85),
+              color: (isDark ? Colors.black : Colors.white).withOpacity(0.88),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.05), width: 1.2),
+              border: Border.all(
+                color: isSchool && !isCompleted
+                    ? AppColors.primary.withOpacity(0.2)
+                    : (isDark ? Colors.white : Colors.black).withOpacity(0.05),
+                width: 1.3,
+              ),
             ),
             child: Row(
               children: [
                 GestureDetector(
                   onTap: () => context.read<TaskProvider>().toggleTask(task['id']),
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: isCompleted ? AppColors.primary : Colors.transparent,
                       shape: BoxShape.circle,
-                      border: Border.all(color: isCompleted ? AppColors.primary : Colors.grey.shade400, width: 2),
+                      border: Border.all(
+                        color: isCompleted ? AppColors.primary : Colors.grey.shade400, width: 2),
                     ),
-                    child: Icon(Icons.check, size: 14, color: isCompleted ? Colors.white : Colors.transparent),
+                    child: Icon(Icons.check, size: 14,
+                        color: isCompleted ? Colors.white : Colors.transparent),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        task['title'],
-                        style: GoogleFonts.inter(
-                          fontSize: 16, 
-                          fontWeight: FontWeight.w600,
-                          decoration: isCompleted ? TextDecoration.lineThrough : null,
-                          color: isCompleted ? Colors.grey : (isDark ? Colors.white : Colors.black),
-                        ),
+                      Row(
+                        children: [
+                          if (isSchool && !isCompleted)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 5),
+                              child: Text(typeEmoji,
+                                  style: const TextStyle(fontSize: 13)),
+                            ),
+                          Expanded(
+                            child: Text(
+                              task['title'] ?? '',
+                              style: GoogleFonts.inter(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                decoration: isCompleted ? TextDecoration.lineThrough : null,
+                                color: isCompleted ? Colors.grey : (isDark ? Colors.white : Colors.black87),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(task['deadline'] ?? 'Today', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          Icon(
+                            dlColor == Colors.red
+                                ? Icons.warning_amber_rounded
+                                : Icons.schedule_rounded,
+                            size: 12, color: isCompleted ? Colors.grey : dlColor),
+                          const SizedBox(width: 3),
+                          Text(
+                            dlLabel,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: isCompleted ? Colors.grey : dlColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if ((task['course_code'] ?? '').isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            _badge(task['course_code'], Colors.blue.withOpacity(0.1), Colors.blue),
+                          ],
+                        ],
+                      ),
                     ],
                   ),
                 ),
-                if (task['is_urgent'] == 1 || task['is_urgent'] == true)
-                  _badge('Urgent', Colors.red.withOpacity(0.1), Colors.red),
               ],
             ),
           ),

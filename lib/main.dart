@@ -11,8 +11,12 @@ import 'core/providers/navigation_provider.dart';
 import 'core/providers/utility_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/chatbot_provider.dart';
+import 'core/services/notification_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Initialize local notification service (loads timezone data, creates channels)
+  await NotificationService().init();
   runApp(
     MultiProvider(
       providers: [
